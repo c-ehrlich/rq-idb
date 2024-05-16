@@ -1,7 +1,7 @@
 import { action, makeObservable, observable } from "mobx";
 import { QueryObserver, queryOptions } from "@tanstack/react-query";
 import { queryClient } from "./main";
-import { indexedDbPersistedOptions } from "./hooks/useCurrentTime";
+import { indexedDbPersistedOptions } from "./useCurrentTime";
 
 export const mobxTimeQuery = queryOptions({
   queryKey: ["in-mobx"],

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useCurrentTimeIdb, useCurrentTimeNoIdb } from "./hooks/useCurrentTime";
-import { MobxStore, mobxTimeQuery } from "./MobxComponent";
+import { useCurrentTimeIdb, useCurrentTimeNoIdb } from "./useCurrentTime";
+import { MobxStore, mobxTimeQuery } from "./mobxStuff";
 import { observer, useLocalObservable } from "mobx-react-lite";
 import { useQuery } from "@tanstack/react-query";
 
@@ -45,7 +45,7 @@ const IndexedDb = observer(function IndexedDb() {
         {mobxQuery.isLoading ? "loading..." : JSON.stringify(mobxQuery.data)}
       </pre>
       <pre>and inside the store... {mobxTime}</pre>
-      <button onClick={mobxFetchTime}>Fetch with MobX</button>
+      <button onClick={mobxFetchTime}>Refetch inside MobX</button>
     </div>
   );
 });
