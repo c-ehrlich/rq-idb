@@ -1,64 +1,53 @@
-import { useState } from "react";
-import { useFruitsStore } from "./hooks/useFruitsStore";
-import { IdbTest } from "./IdbTest";
+import { useEffect, useState } from "react";
+import { useCurrentTimeIdb, useCurrentTimeNoIdb } from "./hooks/useCurrentTime";
+import { MobxStore, mobxTimeQuery } from "./MobxComponent";
+import { observer, useLocalObservable } from "mobx-react-lite";
+import { useQuery } from "@tanstack/react-query";
 
-function IndexedDb() {
-  const [fruit, setFruit] = useState("");
-  const {
-    isLoading,
-    isReady,
-    addFruit,
-    fruits,
-    deleteFruit,
-    isAddFruitPending,
-  } = useFruitsStore();
+function App() {
+  const [show, setShow] = useState(true);
+
   return (
     <div>
-      <IdbTest />
-      <h2>IndexedDb</h2>
-      Status: {isLoading ? "connecting..." : isReady ? "connected" : "n/a"}
-      <div>
-        <label>Fruit</label>
-        <input
-          type="text"
-          value={fruit}
-          onChange={(e) => {
-            setFruit(e.target.value);
-          }}
-        />
-        <button
-          type="button"
-          onClick={async () => {
-            if (!fruit) {
-              alert("Enter fruit name");
-              return;
-            }
-            await addFruit(fruit);
-            setFruit("");
-          }}
-        >
-          {isAddFruitPending ? "Adding..." : "Add Fruit"}
-        </button>
-
-        <ul>
-          {fruits.map((fruit) => {
-            return (
-              <li key={fruit.fruitid}>
-                <span>{fruit.name}</span>
-                <button
-                  onClick={async () => {
-                    await deleteFruit(fruit.fruitid);
-                  }}
-                >
-                  Delete
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
+      <button onClick={() => setShow(!show)}>{show ? "hide" : "show"}</button>
+      {show && <IndexedDb />}
     </div>
   );
 }
 
-export default IndexedDb;
+const IndexedDb = observer(function IndexedDb() {
+  const idbQuery = useCurrentTimeIdb();
+  const nonIdbQuery = useCurrentTimeNoIdb();
+  const mobxStore = useLocalObservable(() => new MobxStore());
+  const { time: mobxTime, fetchTime: mobxFetchTime } = mobxStore;
+
+  const mobxQuery = useQuery(mobxTimeQuery);
+
+  useEffect(() => {
+    const { fetchTime } = mobxStore;
+    fetchTime();
+  }, [mobxStore]);
+
+  return (
+    <div>
+      <pre>
+        With idb:{" "}
+        {idbQuery.isLoading ? "loading..." : JSON.stringify(idbQuery.data)}
+      </pre>
+      <pre>
+        Without idb:{" "}
+        {nonIdbQuery.isLoading
+          ? "loading..."
+          : JSON.stringify(nonIdbQuery.data)}
+      </pre>
+      <pre>
+        From mobx:{" "}
+        {mobxQuery.isLoading ? "loading..." : JSON.stringify(mobxQuery.data)}
+      </pre>
+      <pre>and inside the store... {mobxTime}</pre>
+      <button onClick={mobxFetchTime}>Fetch with MobX</button>
+    </div>
+  );
+});
+
+export default App;
