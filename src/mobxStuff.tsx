@@ -1,7 +1,7 @@
 import { action, makeObservable, observable } from "mobx";
 import { QueryObserver, queryOptions } from "@tanstack/react-query";
 import { queryClient } from "./main";
-import { indexedDbPersistedOptions } from "./useCurrentTime";
+import { indexedDbPersistedOptions } from "./indexedDbStuff";
 
 export const mobxTimeQuery = queryOptions({
   queryKey: ["in-mobx"],
@@ -17,8 +17,9 @@ export const mobxTimeQuery = queryOptions({
 export class MobxStore {
   @observable
   public time?: string;
+  // private destroyObserver: () => void;
 
-  private disposeQueryObserver = new QueryObserver(
+  private cleanupSubscription = new QueryObserver(
     queryClient,
     mobxTimeQuery
   ).subscribe((res) => {
@@ -26,7 +27,11 @@ export class MobxStore {
   });
 
   constructor() {
-    this.time = "foo";
+    // const disposeQueryObserver = new QueryObserver(queryClient, mobxTimeQuery);
+    // this.destroyObserver = disposeQueryObserver.destroy;
+
+    console.log("tktk constructor");
+    this.time = queryClient.getQueryData(mobxTimeQuery.queryKey)?.time;
 
     makeObservable(this);
   }
@@ -38,6 +43,7 @@ export class MobxStore {
 
   @action.bound
   public dispose() {
-    this.disposeQueryObserver();
+    this.cleanupSubscription();
+    // this.destroyObserver();
   }
 }
