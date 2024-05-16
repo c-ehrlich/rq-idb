@@ -24,14 +24,16 @@ const IndexedDb = observer(function IndexedDb() {
     <div>
       <pre>
         In React Query:{" "}
-        {mobxQuery.isLoading ? "loading..." : JSON.stringify(mobxQuery.data)}
+        {mobxQuery.isLoading
+          ? "loading..."
+          : JSON.stringify(mobxQuery.data?.time)}
       </pre>
       <button onClick={() => mobxQuery.refetch()}>
-        Refetch in React Query
+        Refetch in React Query using refetch()
       </button>
-      <pre>In the MobX Store: {String(mobxTime)}</pre>
+      <pre>In the MobX Store: {JSON.stringify(mobxTime)}</pre>
       <button onClick={mobxFetchTime}>
-        Refetch inside MobX using prefetchQuery
+        Refetch inside MobX using prefetchQuery()
       </button>
     </div>
   );

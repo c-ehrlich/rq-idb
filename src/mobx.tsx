@@ -1,4 +1,10 @@
-import { action, makeObservable, observable } from "mobx";
+import {
+  action,
+  makeObservable,
+  observable,
+  onBecomeObserved,
+  onBecomeUnobserved,
+} from "mobx";
 import { QueryObserver, queryOptions } from "@tanstack/react-query";
 import { queryClient } from "./main";
 import { indexedDbPersistedOptions } from "./indexedDB";
@@ -43,23 +49,33 @@ export class MobxStore {
   @observable
   public time?: string;
 
-  private cleanupSubscription = QOSingleton.getInstance().subscribe((res) => {
-    this.time = res.data?.time;
-  });
+  private cleanupSubscription?: () => void;
+
+  @action.bound
+  private setTime(time?: string) {
+    this.time = time;
+  }
 
   constructor() {
     this.time = queryClient.getQueryData(mobxTimeQuery.queryKey)?.time;
 
     makeObservable(this);
+
+    onBecomeObserved(this, "time", () => {
+      this.cleanupSubscription = QOSingleton.getInstance().subscribe((res) => {
+        this.setTime(res.data?.time);
+      });
+    });
+    onBecomeUnobserved(this, "time", () => this.cleanup());
   }
 
   @action.bound
   public async fetchTime() {
-    await queryClient.ensureQueryData(mobxTimeQuery);
+    await queryClient.prefetchQuery(mobxTimeQuery);
   }
 
   @action.bound
-  public dispose() {
-    this.cleanupSubscription();
+  public cleanup() {
+    this.cleanupSubscription?.();
   }
 }
