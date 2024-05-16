@@ -19,14 +19,15 @@ export class MobxStore {
   public time?: string;
   // private destroyObserver: () => void;
 
-  private cleanupSubscription = new QueryObserver(
-    queryClient,
-    mobxTimeQuery
-  ).subscribe((res) => {
-    this.time = res.data?.time;
-  });
-
+  private cleanupSubscription: () => void;
   constructor() {
+    this.cleanupSubscription = new QueryObserver(
+      queryClient,
+      mobxTimeQuery
+    ).subscribe((res) => {
+      this.time = res.data?.time;
+    });
+
     // const disposeQueryObserver = new QueryObserver(queryClient, mobxTimeQuery);
     // this.destroyObserver = disposeQueryObserver.destroy;
 
