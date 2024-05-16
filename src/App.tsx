@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MobxStore, mobxTimeQuery } from "./mobxStuff";
+import { MobxStore, mobxTimeQuery } from "./mobx";
 import { observer, useLocalObservable } from "mobx-react-lite";
 import { useQuery } from "@tanstack/react-query";
 
