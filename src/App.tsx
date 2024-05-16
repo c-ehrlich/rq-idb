@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { MobxStore, mobxTimeQuery } from "./mobx";
 import { observer, useLocalObservable } from "mobx-react-lite";
 import { useQuery } from "@tanstack/react-query";
@@ -16,14 +16,9 @@ function App() {
 
 const IndexedDb = observer(function IndexedDb() {
   const mobxStore = useLocalObservable(() => new MobxStore());
-  const { time: mobxTime, fetchTime: mobxFetchTime, whatsthetime } = mobxStore;
+  const { time: mobxTime, fetchTime: mobxFetchTime } = mobxStore;
 
   const mobxQuery = useQuery(mobxTimeQuery);
-
-  useEffect(() => {
-    // const { dispose } = mobxStore;
-    // return () => dispose();
-  }, [mobxStore]);
 
   return (
     <div>
@@ -38,7 +33,6 @@ const IndexedDb = observer(function IndexedDb() {
       <button onClick={mobxFetchTime}>
         Refetch inside MobX using prefetchQuery
       </button>
-      <button onClick={whatsthetime}>What's the time?</button>
     </div>
   );
 });

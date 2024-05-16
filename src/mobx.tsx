@@ -1,4 +1,4 @@
-import { action, makeObservable, observable } from "mobx";
+import { action, makeObservable, observable, onBecomeUnobserved } from "mobx";
 import { QueryObserver, queryOptions } from "@tanstack/react-query";
 import { queryClient } from "./main";
 import { indexedDbPersistedOptions } from "./indexedDB";
@@ -10,41 +10,56 @@ export const mobxTimeQuery = queryOptions({
 
     return { time: new Date().toISOString() };
   },
-  // ...indexedDbPersistedOptions,
+  ...indexedDbPersistedOptions,
   staleTime: 5000,
 });
+
+const QOSingleton = (function () {
+  let instance: QueryObserver<
+    {
+      time: string;
+    },
+    Error,
+    {
+      time: string;
+    },
+    {
+      time: string;
+    },
+    string[]
+  >;
+
+  return {
+    getInstance: function () {
+      if (!instance) {
+        instance = new QueryObserver(queryClient, mobxTimeQuery);
+      }
+      return instance;
+    },
+  };
+})();
 
 export class MobxStore {
   @observable
   public time?: string;
 
-  private cleanupSubscription = new QueryObserver(
-    queryClient,
-    mobxTimeQuery
-  ).subscribe((res) => {
-    console.log("tktk subscription", res);
-    console.log("tktk this", this);
+  private cleanupSubscription = QOSingleton.getInstance().subscribe((res) => {
     this.time = res.data?.time;
-
-    console.log("tktk subscription", this.time);
   });
 
   constructor() {
+    this.time = queryClient.getQueryData(mobxTimeQuery.queryKey)?.time;
+
     makeObservable(this);
   }
 
   @action.bound
   public async fetchTime() {
-    await queryClient.prefetchQuery({ ...mobxTimeQuery });
+    await queryClient.ensureQueryData(mobxTimeQuery);
   }
 
   @action.bound
-  public whatsthetime() {
-    console.log("tktk whatsthetime", this.time);
+  public dispose() {
+    this.cleanupSubscription();
   }
-
-  // @action.bound
-  // public dispose() {
-  //   this.cleanupSubscription();
-  // }
 }
