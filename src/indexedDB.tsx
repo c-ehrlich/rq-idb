@@ -10,7 +10,6 @@ function newIdbStorage(idbStore: UseStore): AsyncStorage<PersistedQuery> {
     getItem: async (key) => await get(key, idbStore),
     setItem: async (key, value) => await set(key, value, idbStore),
     removeItem: async (key) => await del(key, idbStore),
-    // removeAll: async () => await clear(idbStore),
   };
 }
 
