@@ -38,12 +38,12 @@ export class MobxStore {
   @observable
   public time?: string;
 
-  private cleanupSubscription?: () => void;
-
   @action.bound
   private setTime(time?: string) {
     this.time = time;
   }
+
+  private cleanupSubscription?: () => void;
 
   constructor() {
     this.time = queryClient.getQueryData(mobxTimeQuery.queryKey)?.time;
