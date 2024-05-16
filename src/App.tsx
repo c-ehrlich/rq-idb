@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useCurrentTimeIdb, useCurrentTimeNoIdb } from "./useCurrentTime";
 import { MobxStore, mobxTimeQuery } from "./mobxStuff";
 import { observer, useLocalObservable } from "mobx-react-lite";
 import { useQuery } from "@tanstack/react-query";
@@ -16,36 +15,31 @@ function App() {
 }
 
 const IndexedDb = observer(function IndexedDb() {
-  const idbQuery = useCurrentTimeIdb();
-  const nonIdbQuery = useCurrentTimeNoIdb();
   const mobxStore = useLocalObservable(() => new MobxStore());
   const { time: mobxTime, fetchTime: mobxFetchTime } = mobxStore;
 
   const mobxQuery = useQuery(mobxTimeQuery);
 
   useEffect(() => {
-    const { fetchTime } = mobxStore;
+    const { fetchTime, dispose } = mobxStore;
     fetchTime();
+
+    return () => dispose();
   }, [mobxStore]);
 
   return (
     <div>
       <pre>
-        With idb:{" "}
-        {idbQuery.isLoading ? "loading..." : JSON.stringify(idbQuery.data)}
-      </pre>
-      <pre>
-        Without idb:{" "}
-        {nonIdbQuery.isLoading
-          ? "loading..."
-          : JSON.stringify(nonIdbQuery.data)}
-      </pre>
-      <pre>
-        From mobx:{" "}
+        In React Query:{" "}
         {mobxQuery.isLoading ? "loading..." : JSON.stringify(mobxQuery.data)}
       </pre>
-      <pre>and inside the store... {mobxTime}</pre>
-      <button onClick={mobxFetchTime}>Refetch inside MobX</button>
+      <button onClick={() => mobxQuery.refetch()}>
+        Refetch in React Query
+      </button>
+      <pre>In the MobX Store {mobxTime}</pre>
+      <button onClick={mobxFetchTime}>
+        Refetch inside MobX using prefetchQuery
+      </button>
     </div>
   );
 });

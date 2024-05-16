@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import {
   AsyncStorage,
   PersistedQuery,
@@ -25,25 +24,3 @@ export const indexedDbPersistedOptions = {
     deserialize: (cached) => cached,
   }),
 };
-
-export const useCurrentTimeIdb = () =>
-  useQuery<{ time: string }>({
-    queryKey: ["with-idb"],
-    queryFn: async () => {
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-
-      return { time: new Date().toISOString() };
-    },
-    ...indexedDbPersistedOptions,
-  });
-
-export const useCurrentTimeNoIdb = () =>
-  useQuery<{ time: string }>({
-    staleTime: 1000 * 5, // 5 seconds
-    queryKey: ["without-idb"],
-    queryFn: async () => {
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-
-      return { time: new Date().toISOString() };
-    },
-  });
