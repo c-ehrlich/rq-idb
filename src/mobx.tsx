@@ -6,31 +6,30 @@ import { indexedDbPersistedOptions } from "./indexedDB";
 export const mobxTimeQuery = queryOptions({
   queryKey: ["in-mobx"],
   queryFn: async () => {
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     return { time: new Date().toISOString() };
   },
-  ...indexedDbPersistedOptions,
-  staleTime: 10000,
+  // ...indexedDbPersistedOptions,
+  staleTime: 5000,
 });
 
 export class MobxStore {
   @observable
   public time?: string;
 
-  private cleanupSubscription: () => void;
+  private cleanupSubscription = new QueryObserver(
+    queryClient,
+    mobxTimeQuery
+  ).subscribe((res) => {
+    console.log("tktk subscription", res);
+    console.log("tktk this", this);
+    this.time = res.data?.time;
+
+    console.log("tktk subscription", this.time);
+  });
 
   constructor() {
-    const qo = new QueryObserver(queryClient, mobxTimeQuery);
-    this.cleanupSubscription = qo.subscribe((res) => {
-      this.time = res.data?.time;
-
-      this.cleanupSubscription();
-    });
-
-    console.log("tktk constructor");
-    this.time = queryClient.getQueryData(mobxTimeQuery.queryKey)?.time;
-
     makeObservable(this);
   }
 
@@ -40,7 +39,12 @@ export class MobxStore {
   }
 
   @action.bound
-  public dispose() {
-    this.cleanupSubscription();
+  public whatsthetime() {
+    console.log("tktk whatsthetime", this.time);
   }
+
+  // @action.bound
+  // public dispose() {
+  //   this.cleanupSubscription();
+  // }
 }
