@@ -20,20 +20,9 @@ export const mobxTimeQuery = queryOptions({
   staleTime: 5000,
 });
 
+type T = { time: string };
 const QOSingleton = (function () {
-  let instance: QueryObserver<
-    {
-      time: string;
-    },
-    Error,
-    {
-      time: string;
-    },
-    {
-      time: string;
-    },
-    string[]
-  >;
+  let instance: QueryObserver<T, Error, T, T, string[]>;
 
   return {
     getInstance: function () {
