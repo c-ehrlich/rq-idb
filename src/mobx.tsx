@@ -50,12 +50,19 @@ export class MobxStore {
 
     makeObservable(this);
 
+    // TODO: this is why we get multiple listeners https://github.com/mobxjs/mobx/issues/2667
+
     onBecomeObserved(this, "time", () => {
+      this.fetchTime();
       this.cleanupSubscription = QOSingleton.getInstance().subscribe((res) => {
+        console.log("onBecomeObserved");
         this.setTime(res.data?.time);
       });
     });
-    onBecomeUnobserved(this, "time", () => this.cleanup());
+    onBecomeUnobserved(this, "time", () => {
+      console.log("onBecomeUnobserved");
+      this.cleanup();
+    });
   }
 
   @action.bound
