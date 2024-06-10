@@ -12,6 +12,7 @@ import {
   QueryClient,
   QueryObserver,
   QueryObserverOptions,
+  QueryObserverResult,
   queryOptions,
 } from "@tanstack/react-query";
 import { indexedDbPersistedOptions } from "./indexedDB";
@@ -76,29 +77,28 @@ export const getQueryObserverInstance = QOSingletonPerQueryKey.getInstance;
 
 export class MobxStore {
   @observable
-  public time?: string;
+  public timeQuery: QueryObserverResult<{ time: string }, Error>;
 
   @action.bound
-  private setTime(time?: string) {
-    this.time = time;
+  private setTime(newTime: QueryObserverResult<{ time: string }, Error>) {
+    this.timeQuery = newTime;
   }
 
   private cleanupSubscription?: () => void;
 
   constructor() {
-    this.time = getQueryClient().getQueryData(mobxTimeQuery.queryKey)?.time;
+    this.timeQuery = getQueryObserverInstance(mobxTimeQuery).getCurrentResult();
 
     makeObservable(this);
 
-    onBecomeObserved(this, "time", () => {
+    onBecomeObserved(this, "timeQuery", () => {
       this.cleanupSubscription = getQueryObserverInstance(
         mobxTimeQuery
       ).subscribe((res) => {
-        console.log(res);
-        this.setTime(res.data?.time);
+        this.setTime(res);
       });
     });
-    onBecomeUnobserved(this, "time", () => {
+    onBecomeUnobserved(this, "timeQuery", () => {
       this.cleanup();
     });
   }
@@ -106,10 +106,6 @@ export class MobxStore {
   @action.bound
   public async fetchTime() {
     await getQueryClient().prefetchQuery(mobxTimeQuery);
-  }
-
-  public get timeQueryState() {
-    return getQueryClient().getQueryState(mobxTimeQuery.queryKey);
   }
 
   @action.bound

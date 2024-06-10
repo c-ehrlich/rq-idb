@@ -36,9 +36,7 @@ const Rq = () => {
 
   return (
     <div>
-      <pre>
-        {rqQuery.isLoading ? "loading..." : JSON.stringify(rqQuery.data?.time)}
-      </pre>
+      <pre>{JSON.stringify(rqQuery, null, 2)}</pre>
       <button onClick={() => rqQuery.refetch()}>
         Refetch in React Query using refetch()
       </button>
@@ -48,24 +46,16 @@ const Rq = () => {
 
 const MobX = observer(function MobX() {
   const mobxStore = useLocalObservable(() => new MobxStore());
-  const {
-    time: mobxTime,
-    fetchTime: mobxFetchTime,
-    timeQueryState,
-  } = mobxStore;
+  const { timeQuery: mobxTime, fetchTime: mobxFetchTime } = mobxStore;
 
   return (
     <div>
-      <pre>{JSON.stringify(mobxTime)}</pre>
+      <pre>{JSON.stringify(mobxTime, null, 2)}</pre>
       <div>
         <button onClick={mobxFetchTime}>
           Refetch inside MobX using prefetchQuery()
         </button>
       </div>
-      <div>
-        <button onClick={() => console.log(timeQueryState)}>state</button>
-      </div>
-      <pre>{JSON.stringify(timeQueryState, null, 2)}</pre>
     </div>
   );
 });
