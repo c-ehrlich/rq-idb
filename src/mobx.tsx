@@ -9,13 +9,32 @@ import {
 } from "mobx";
 import {
   hashKey,
+  QueryClient,
   QueryObserver,
   QueryObserverOptions,
-  QueryOptions,
   queryOptions,
 } from "@tanstack/react-query";
-import { queryClient } from "./main";
 import { indexedDbPersistedOptions } from "./indexedDB";
+
+export function queryClientFactory() {
+  let instance: QueryClient;
+
+  function createInstance() {
+    console.log("creating instance");
+    return new QueryClient();
+  }
+
+  return {
+    getInstance: function () {
+      if (!instance) {
+        instance = createInstance();
+      }
+      return instance;
+    },
+  };
+}
+
+export const QueryClientFactory = queryClientFactory();
 
 export const mobxTimeQuery = queryOptions({
   queryKey: ["in-mobx"],
@@ -28,52 +47,33 @@ export const mobxTimeQuery = queryOptions({
   staleTime: 5000,
 });
 
-const QOSingletonOld = (function () {
-  const instances: Record<string, QueryObserver> = {};
+export const QOSingletonPerQueryKey = (function () {
+  const qoInstances = new Map<string, QueryObserver>();
 
   return {
-    getInstance: function (name: string) {
-      if (!instances[name]) {
-        instances[name] = new QueryObserver(queryClient, mobxTimeQuery) as any;
-      }
-      return instances[name];
-    },
-  };
-})();
-
-const QOSingleton = (function () {
-  const instances = new Map<string, QueryObserver>();
-
-  return {
-    getInstance: function <T>(
-      qopts: QueryObserverOptions<T, Error, T, any, any>
-    ): QueryObserver<T> {
+    getInstance: function <TData>(
+      qopts: QueryObserverOptions<TData, Error, TData, any, any>
+    ): QueryObserver<TData, Error, TData, TData> {
       if (!qopts.queryKey) {
         throw new Error("queryKey is required");
       }
 
       const name = hashKey(qopts.queryKey);
 
-      if (!instances.has(name)) {
-        instances.set(name, new QueryObserver(queryClient, qopts) as any);
+      if (!qoInstances.has(name)) {
+        qoInstances.set(
+          name,
+          new QueryObserver<any, any, any, any, any>(
+            QueryClientFactory.getInstance(),
+            qopts
+          )
+        );
       }
-      return instances.get(name) as any;
+
+      return qoInstances.get(name) as QueryObserver<TData, Error, TData, TData>;
     },
   };
 })();
-
-const qopts = queryOptions({
-  queryKey: ["in-mobx", { foo: "bar" }],
-  queryFn: async () => {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    return { time: new Date().toISOString() };
-  },
-  ...indexedDbPersistedOptions,
-  staleTime: 5000,
-});
-
-const qos2 = QOSingleton.getInstance(qopts);
 
 export class MobxStore {
   @observable
@@ -87,12 +87,14 @@ export class MobxStore {
   private cleanupSubscription?: () => void;
 
   constructor() {
-    this.time = queryClient.getQueryData(mobxTimeQuery.queryKey)?.time;
+    this.time = QueryClientFactory.getInstance().getQueryData(
+      mobxTimeQuery.queryKey
+    )?.time;
 
     makeObservable(this);
 
     onBecomeObserved(this, "time", () => {
-      this.cleanupSubscription = QOSingleton.getInstance(
+      this.cleanupSubscription = QOSingletonPerQueryKey.getInstance(
         mobxTimeQuery
       ).subscribe((res) => {
         this.setTime(res.data?.time);
@@ -103,7 +105,7 @@ export class MobxStore {
 
   @action.bound
   public async fetchTime() {
-    await queryClient.prefetchQuery(mobxTimeQuery);
+    await QueryClientFactory.getInstance().prefetchQuery(mobxTimeQuery);
   }
 
   @action.bound
