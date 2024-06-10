@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { QOSingletonPerQueryKey, mobxTimeQuery } from "./mobx";
+import { getQueryObserverInstance, mobxTimeQuery } from "./mobx";
 
 export function QOTest() {
   const [show, setShow] = useState(true);
@@ -26,9 +26,7 @@ export function QOTest() {
 function useQueryObserver() {
   const queryClient = useQueryClient();
 
-  const [qo] = useState(() =>
-    QOSingletonPerQueryKey.getInstance(mobxTimeQuery)
-  );
+  const [qo] = useState(() => getQueryObserverInstance(mobxTimeQuery));
 
   const [time, setTime] = useState<string | undefined>(
     () => queryClient.getQueryData(mobxTimeQuery.queryKey)?.time

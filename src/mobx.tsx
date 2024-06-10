@@ -16,7 +16,7 @@ import {
 } from "@tanstack/react-query";
 import { indexedDbPersistedOptions } from "./indexedDB";
 
-export function queryClientFactory() {
+function queryClientFactory() {
   let instance: QueryClient;
 
   function createInstance() {
@@ -34,7 +34,7 @@ export function queryClientFactory() {
   };
 }
 
-export const QueryClientFactory = queryClientFactory();
+export const getQueryClient = queryClientFactory().getInstance;
 
 export const mobxTimeQuery = queryOptions({
   queryKey: ["in-mobx"],
@@ -47,7 +47,7 @@ export const mobxTimeQuery = queryOptions({
   staleTime: 5000,
 });
 
-export const QOSingletonPerQueryKey = (function () {
+const QOSingletonPerQueryKey = (function () {
   const qoInstances = new Map<string, QueryObserver>();
 
   return {
@@ -63,10 +63,7 @@ export const QOSingletonPerQueryKey = (function () {
       if (!qoInstances.has(name)) {
         qoInstances.set(
           name,
-          new QueryObserver<any, any, any, any, any>(
-            QueryClientFactory.getInstance(),
-            qopts
-          )
+          new QueryObserver<any, any, any, any, any>(getQueryClient(), qopts)
         );
       }
 
@@ -74,6 +71,8 @@ export const QOSingletonPerQueryKey = (function () {
     },
   };
 })();
+
+export const getQueryObserverInstance = QOSingletonPerQueryKey.getInstance;
 
 export class MobxStore {
   @observable
@@ -87,14 +86,12 @@ export class MobxStore {
   private cleanupSubscription?: () => void;
 
   constructor() {
-    this.time = QueryClientFactory.getInstance().getQueryData(
-      mobxTimeQuery.queryKey
-    )?.time;
+    this.time = getQueryClient().getQueryData(mobxTimeQuery.queryKey)?.time;
 
     makeObservable(this);
 
     onBecomeObserved(this, "time", () => {
-      this.cleanupSubscription = QOSingletonPerQueryKey.getInstance(
+      this.cleanupSubscription = getQueryObserverInstance(
         mobxTimeQuery
       ).subscribe((res) => {
         this.setTime(res.data?.time);
@@ -105,7 +102,7 @@ export class MobxStore {
 
   @action.bound
   public async fetchTime() {
-    await QueryClientFactory.getInstance().prefetchQuery(mobxTimeQuery);
+    await getQueryClient().prefetchQuery(mobxTimeQuery);
   }
 
   @action.bound
