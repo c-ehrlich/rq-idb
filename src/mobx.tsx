@@ -6,7 +6,12 @@ import {
   onBecomeObserved,
   onBecomeUnobserved,
 } from "mobx";
-import { QueryObserver, queryOptions } from "@tanstack/react-query";
+import {
+  hashKey,
+  QueryObserver,
+  QueryOptions,
+  queryOptions,
+} from "@tanstack/react-query";
 import { queryClient } from "./main";
 import { indexedDbPersistedOptions } from "./indexedDB";
 
@@ -38,14 +43,35 @@ const QOSingleton2 = (function () {
   const instances: Record<string, QueryObserver> = {};
 
   return {
-    getInstance: function (name: string) {
+    getInstance: function <T>(
+      qopts: QueryOptions<T, Error, T, any>
+    ): QueryObserver<T> {
+      if (!qopts.queryKey) {
+        throw new Error("queryKey is required");
+      }
+
+      const name = hashKey(qopts.queryKey);
+
       if (!instances[name]) {
         instances[name] = new QueryObserver(queryClient, mobxTimeQuery) as any;
       }
-      return instances[name];
+      return instances[name] as any;
     },
   };
 })();
+
+const qopts = queryOptions({
+  queryKey: ["in-mobx", { foo: "bar" }],
+  queryFn: async () => {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    return { time: new Date().toISOString() };
+  },
+  ...indexedDbPersistedOptions,
+  staleTime: 5000,
+});
+
+const qos2 = QOSingleton2.getInstance(qopts);
 
 export class MobxStore {
   @observable
@@ -64,11 +90,11 @@ export class MobxStore {
     makeObservable(this);
 
     onBecomeObserved(this, "time", () => {
-      this.cleanupSubscription = QOSingleton.getInstance("time").subscribe(
-        (res) => {
-          this.setTime(res.data?.time);
-        }
-      );
+      this.cleanupSubscription = QOSingleton2.getInstance(
+        mobxTimeQuery
+      ).subscribe((res) => {
+        this.setTime(res.data?.time);
+      });
     });
     onBecomeUnobserved(this, "time", () => this.cleanup());
   }
