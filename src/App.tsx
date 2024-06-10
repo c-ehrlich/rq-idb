@@ -2,34 +2,38 @@ import { useState } from "react";
 import { MobxStore, mobxTimeQuery } from "./mobx";
 import { observer, useLocalObservable } from "mobx-react-lite";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { QOTest } from "./QOTest";
 
 function App() {
-  const [showRq, setShowRq] = useState(true);
-  const [showMobX, setShowMobX] = useState(true);
-
-  return (
-    <div style={{ display: "flex", gap: "16px" }}>
-      <div style={{ border: "1px solid red", padding: "16px" }}>
-        <h1>MobX</h1>
-        <button onClick={() => setShowMobX(!showMobX)}>
-          {showMobX ? "hide" : "show"}
-        </button>
-        {showMobX && <MobX />}
-      </div>
-      <div style={{ border: "1px solid blue", padding: "16px" }}>
-        <h1>React Query</h1>
-        <button onClick={() => setShowRq(!showRq)}>
-          {showRq ? "hide" : "show"}
-        </button>
-        {showRq && <Rq />}
-      </div>
-      <div style={{ border: "1px solid green", padding: "16px" }}>
-        <h1>QueryClient</h1>
-        <Invalidate />
-      </div>
-    </div>
-  );
+  return <QOTest />;
 }
+// function App() {
+//   const [showRq, setShowRq] = useState(true);
+//   const [showMobX, setShowMobX] = useState(true);
+
+//   return (
+//     <div style={{ display: "flex", gap: "16px" }}>
+//       <div style={{ border: "1px solid red", padding: "16px" }}>
+//         <h1>MobX</h1>
+//         <button onClick={() => setShowMobX(!showMobX)}>
+//           {showMobX ? "hide" : "show"}
+//         </button>
+//         {showMobX && <MobX />}
+//       </div>
+//       <div style={{ border: "1px solid blue", padding: "16px" }}>
+//         <h1>React Query</h1>
+//         <button onClick={() => setShowRq(!showRq)}>
+//           {showRq ? "hide" : "show"}
+//         </button>
+//         {showRq && <Rq />}
+//       </div>
+//       <div style={{ border: "1px solid green", padding: "16px" }}>
+//         <h1>QueryClient</h1>
+//         <Invalidate />
+//       </div>
+//     </div>
+//   );
+// }
 
 const Rq = () => {
   const rqQuery = useQuery(mobxTimeQuery);

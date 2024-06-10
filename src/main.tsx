@@ -3,10 +3,11 @@ import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { broadcastQueryClient } from "@tanstack/query-broadcast-client-experimental";
+import { getQueryClient } from "./mobx.tsx";
 
-export const queryClient = new QueryClient();
+const queryClient = getQueryClient();
 
 broadcastQueryClient({
   queryClient,

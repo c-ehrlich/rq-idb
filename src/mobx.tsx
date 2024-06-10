@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   action,
   makeObservable,
@@ -5,9 +7,34 @@ import {
   onBecomeObserved,
   onBecomeUnobserved,
 } from "mobx";
-import { QueryObserver, queryOptions } from "@tanstack/react-query";
-import { queryClient } from "./main";
+import {
+  hashKey,
+  QueryClient,
+  QueryObserver,
+  QueryObserverOptions,
+  queryOptions,
+} from "@tanstack/react-query";
 import { indexedDbPersistedOptions } from "./indexedDB";
+
+function queryClientFactory() {
+  let instance: QueryClient;
+
+  function createInstance() {
+    console.log("creating instance");
+    return new QueryClient();
+  }
+
+  return {
+    getInstance: function () {
+      if (!instance) {
+        instance = createInstance();
+      }
+      return instance;
+    },
+  };
+}
+
+export const getQueryClient = queryClientFactory().getInstance;
 
 export const mobxTimeQuery = queryOptions({
   queryKey: ["in-mobx"],
@@ -20,19 +47,32 @@ export const mobxTimeQuery = queryOptions({
   staleTime: 5000,
 });
 
-type T = { time: string };
-const QOSingleton = (function () {
-  let instance: QueryObserver<T, Error, T, T, string[]>;
+const QOSingletonPerQueryKey = (function () {
+  const qoInstances = new Map<string, QueryObserver>();
 
   return {
-    getInstance: function () {
-      if (!instance) {
-        instance = new QueryObserver(queryClient, mobxTimeQuery);
+    getInstance: function <TData>(
+      qopts: QueryObserverOptions<TData, Error, TData, any, any>
+    ): QueryObserver<TData, Error, TData, TData> {
+      if (!qopts.queryKey) {
+        throw new Error("queryKey is required");
       }
-      return instance;
+
+      const name = hashKey(qopts.queryKey);
+
+      if (!qoInstances.has(name)) {
+        qoInstances.set(
+          name,
+          new QueryObserver<any, any, any, any, any>(getQueryClient(), qopts)
+        );
+      }
+
+      return qoInstances.get(name) as QueryObserver<TData, Error, TData, TData>;
     },
   };
 })();
+
+export const getQueryObserverInstance = QOSingletonPerQueryKey.getInstance;
 
 export class MobxStore {
   @observable
@@ -46,16 +86,16 @@ export class MobxStore {
   private cleanupSubscription?: () => void;
 
   constructor() {
-    this.time = queryClient.getQueryData(mobxTimeQuery.queryKey)?.time;
+    this.time = getQueryClient().getQueryData(mobxTimeQuery.queryKey)?.time;
 
     makeObservable(this);
 
     // TODO: this is why we get multiple listeners https://github.com/mobxjs/mobx/issues/2667
 
     onBecomeObserved(this, "time", () => {
-      this.fetchTime();
-      this.cleanupSubscription = QOSingleton.getInstance().subscribe((res) => {
-        console.log("onBecomeObserved");
+      this.cleanupSubscription = getQueryObserverInstance(
+        mobxTimeQuery
+      ).subscribe((res) => {
         this.setTime(res.data?.time);
       });
     });
@@ -67,7 +107,7 @@ export class MobxStore {
 
   @action.bound
   public async fetchTime() {
-    await queryClient.prefetchQuery(mobxTimeQuery);
+    await getQueryClient().prefetchQuery(mobxTimeQuery);
   }
 
   @action.bound
