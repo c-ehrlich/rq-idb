@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   action,
@@ -9,6 +10,7 @@ import {
 import {
   hashKey,
   QueryObserver,
+  QueryObserverOptions,
   QueryOptions,
   queryOptions,
 } from "@tanstack/react-query";
@@ -26,7 +28,7 @@ export const mobxTimeQuery = queryOptions({
   staleTime: 5000,
 });
 
-const QOSingleton = (function () {
+const QOSingletonOld = (function () {
   const instances: Record<string, QueryObserver> = {};
 
   return {
@@ -39,12 +41,12 @@ const QOSingleton = (function () {
   };
 })();
 
-const QOSingleton2 = (function () {
-  const instances: Record<string, QueryObserver> = {};
+const QOSingleton = (function () {
+  const instances = new Map<string, QueryObserver>();
 
   return {
     getInstance: function <T>(
-      qopts: QueryOptions<T, Error, T, any>
+      qopts: QueryObserverOptions<T, Error, T, any, any>
     ): QueryObserver<T> {
       if (!qopts.queryKey) {
         throw new Error("queryKey is required");
@@ -52,10 +54,10 @@ const QOSingleton2 = (function () {
 
       const name = hashKey(qopts.queryKey);
 
-      if (!instances[name]) {
-        instances[name] = new QueryObserver(queryClient, mobxTimeQuery) as any;
+      if (!instances.has(name)) {
+        instances.set(name, new QueryObserver(queryClient, qopts) as any);
       }
-      return instances[name] as any;
+      return instances.get(name) as any;
     },
   };
 })();
@@ -71,7 +73,7 @@ const qopts = queryOptions({
   staleTime: 5000,
 });
 
-const qos2 = QOSingleton2.getInstance(qopts);
+const qos2 = QOSingleton.getInstance(qopts);
 
 export class MobxStore {
   @observable
@@ -90,7 +92,7 @@ export class MobxStore {
     makeObservable(this);
 
     onBecomeObserved(this, "time", () => {
-      this.cleanupSubscription = QOSingleton2.getInstance(
+      this.cleanupSubscription = QOSingleton.getInstance(
         mobxTimeQuery
       ).subscribe((res) => {
         this.setTime(res.data?.time);
