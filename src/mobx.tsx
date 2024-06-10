@@ -98,7 +98,6 @@ export class MobxStore {
       });
     });
     onBecomeUnobserved(this, "time", () => {
-      console.log("onBecomeUnobserved");
       this.cleanup();
     });
   }
