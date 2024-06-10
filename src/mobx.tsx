@@ -94,6 +94,7 @@ export class MobxStore {
       this.cleanupSubscription = getQueryObserverInstance(
         mobxTimeQuery
       ).subscribe((res) => {
+        console.log(res);
         this.setTime(res.data?.time);
       });
     });
@@ -105,6 +106,10 @@ export class MobxStore {
   @action.bound
   public async fetchTime() {
     await getQueryClient().prefetchQuery(mobxTimeQuery);
+  }
+
+  public get timeQueryState() {
+    return getQueryClient().getQueryState(mobxTimeQuery.queryKey);
   }
 
   @action.bound
