@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   action,
   makeObservable,
@@ -20,16 +21,28 @@ export const mobxTimeQuery = queryOptions({
   staleTime: 5000,
 });
 
-type T = { time: string };
 const QOSingleton = (function () {
-  let instance: QueryObserver<T, Error, T, T, string[]>;
+  const instances: Record<string, QueryObserver> = {};
 
   return {
-    getInstance: function () {
-      if (!instance) {
-        instance = new QueryObserver(queryClient, mobxTimeQuery);
+    getInstance: function (name: string) {
+      if (!instances[name]) {
+        instances[name] = new QueryObserver(queryClient, mobxTimeQuery) as any;
       }
-      return instance;
+      return instances[name];
+    },
+  };
+})();
+
+const QOSingleton2 = (function () {
+  const instances: Record<string, QueryObserver> = {};
+
+  return {
+    getInstance: function (name: string) {
+      if (!instances[name]) {
+        instances[name] = new QueryObserver(queryClient, mobxTimeQuery) as any;
+      }
+      return instances[name];
     },
   };
 })();
@@ -51,9 +64,11 @@ export class MobxStore {
     makeObservable(this);
 
     onBecomeObserved(this, "time", () => {
-      this.cleanupSubscription = QOSingleton.getInstance().subscribe((res) => {
-        this.setTime(res.data?.time);
-      });
+      this.cleanupSubscription = QOSingleton.getInstance("time").subscribe(
+        (res) => {
+          this.setTime(res.data?.time);
+        }
+      );
     });
     onBecomeUnobserved(this, "time", () => this.cleanup());
   }
