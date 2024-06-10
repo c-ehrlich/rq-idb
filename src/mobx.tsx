@@ -90,8 +90,6 @@ export class MobxStore {
 
     makeObservable(this);
 
-    // TODO: this is why we get multiple listeners https://github.com/mobxjs/mobx/issues/2667
-
     onBecomeObserved(this, "time", () => {
       this.cleanupSubscription = getQueryObserverInstance(
         mobxTimeQuery
