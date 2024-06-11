@@ -41,35 +41,38 @@ export const mobxTimeQuery = queryOptions({
 export const MobXQueryObservers = (function CreateSingleton() {
   const qoInstances = new Map<string, QueryObserver>();
 
+  const get = <TData,>(
+    qopts: QueryObserverOptions<TData, Error, TData, any, any>
+  ): QueryObserver<TData, Error, TData, TData> => {
+    if (!qopts.queryKey) {
+      throw new Error("queryKey is required");
+    }
+
+    const name = hashKey(qopts.queryKey);
+
+    const queryClient = QueryClientSingleton.getInstance();
+
+    if (!qoInstances.has(name)) {
+      qoInstances.set(
+        name,
+        new QueryObserver<any, any, any, any, any>(queryClient, qopts)
+      );
+    }
+
+    return qoInstances.get(name) as QueryObserver<TData, Error, TData, TData>;
+  };
+
+  const cleanup = (qopts: QueryObserverOptions<any, Error, any, any, any>) => {
+    const instance = qoInstances.get(hashKey(qopts.queryKey));
+    if (instance && !instance.hasListeners()) {
+      instance.destroy();
+      qoInstances.delete(hashKey(qopts.queryKey));
+    }
+  };
+
   return {
-    get: function <TData>(
-      qopts: QueryObserverOptions<TData, Error, TData, any, any>
-    ): QueryObserver<TData, Error, TData, TData> {
-      if (!qopts.queryKey) {
-        throw new Error("queryKey is required");
-      }
-
-      const name = hashKey(qopts.queryKey);
-
-      const queryClient = QueryClientSingleton.getInstance();
-
-      if (!qoInstances.has(name)) {
-        qoInstances.set(
-          name,
-          new QueryObserver<any, any, any, any, any>(queryClient, qopts)
-        );
-      }
-
-      return qoInstances.get(name) as QueryObserver<TData, Error, TData, TData>;
-    },
-
-    cleanup: (qopts: QueryObserverOptions<any, Error, any, any, any>) => {
-      const instance = qoInstances.get(hashKey(qopts.queryKey));
-      if (instance && !instance.hasListeners()) {
-        instance.destroy();
-        qoInstances.delete(hashKey(qopts.queryKey));
-      }
-    },
+    get,
+    cleanup,
   };
 })();
 
