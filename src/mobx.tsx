@@ -48,7 +48,7 @@ export const mobxTimeQuery = queryOptions({
   staleTime: 5000,
 });
 
-const QueryObservers = (function () {
+export const MobXQueryObservers = (function () {
   const qoInstances = new Map<string, QueryObserver>();
 
   return {
@@ -81,8 +81,8 @@ const QueryObservers = (function () {
   };
 })();
 
-export const getQueryObserverInstance = QueryObservers.get;
-export const cleanupQueryObserver = QueryObservers.cleanup;
+export const getQueryObserverInstance = MobXQueryObservers.get;
+export const cleanupQueryObserver = MobXQueryObservers.cleanup;
 
 type MobxQuery<TData, TError = Error> = QueryObserverResult<TData, TError>;
 
