@@ -48,7 +48,7 @@ export const mobxTimeQuery = queryOptions({
   staleTime: 5000,
 });
 
-const QOSingletonPerQueryKey = (function () {
+const QueryObservers = (function () {
   const qoInstances = new Map<string, QueryObserver>();
 
   return {
@@ -70,17 +70,30 @@ const QOSingletonPerQueryKey = (function () {
 
       return qoInstances.get(name) as QueryObserver<TData, Error, TData, TData>;
     },
+
+    cleanupInstance: (
+      qopts: QueryObserverOptions<any, Error, any, any, any>
+    ) => {
+      const instance = getQueryObserverInstance(qopts);
+      if (!instance.hasListeners()) {
+        instance.destroy();
+        qoInstances.delete(hashKey(qopts.queryKey));
+      }
+    },
   };
 })();
 
-export const getQueryObserverInstance = QOSingletonPerQueryKey.getInstance;
+export const getQueryObserverInstance = QueryObservers.getInstance;
+export const cleanupQueryObserver = QueryObservers.cleanupInstance;
+
+type MobxQuery<TData, TError = Error> = QueryObserverResult<TData, TError>;
 
 export class MobxStore {
   @observable
-  public timeQuery: QueryObserverResult<{ time: string }, Error>;
+  public timeQuery: MobxQuery<{ time: string }>;
 
   @action.bound
-  private setTime(newTime: QueryObserverResult<{ time: string }, Error>) {
+  private setTime(newTime: MobxQuery<{ time: string }>) {
     this.timeQuery = newTime;
   }
 
@@ -96,6 +109,7 @@ export class MobxStore {
         mobxTimeQuery
       ).subscribe((res) => {
         this.setTime(res);
+        // (any side effects, just like the callback in `operate`)
       });
     });
     onBecomeUnobserved(this, "timeQuery", () => {
@@ -111,5 +125,57 @@ export class MobxStore {
   @action.bound
   public cleanup() {
     this.cleanupSubscription?.();
+  }
+}
+
+export const otherMobxQuery = queryOptions({
+  queryKey: ["other-mobx"],
+  queryFn: async () => {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    return { time: new Date().toISOString() };
+  },
+  staleTime: 5000,
+});
+
+export class OtherMobxStore {
+  @observable
+  public timeQuery: MobxQuery<{ time: string }>;
+
+  @action.bound
+  private setTime(newTime: MobxQuery<{ time: string }>) {
+    this.timeQuery = newTime;
+  }
+
+  private cleanupSubscription?: () => void;
+
+  constructor() {
+    this.timeQuery =
+      getQueryObserverInstance(otherMobxQuery).getCurrentResult();
+
+    makeObservable(this);
+
+    onBecomeObserved(this, "timeQuery", () => {
+      this.cleanupSubscription = getQueryObserverInstance(
+        otherMobxQuery
+      ).subscribe((res) => {
+        this.setTime(res);
+        // (any side effects, just like the callback in `operate`)
+      });
+    });
+    onBecomeUnobserved(this, "timeQuery", () => {
+      this.cleanup();
+    });
+  }
+
+  @action.bound
+  public async fetchTime() {
+    await getQueryClient().prefetchQuery(otherMobxQuery);
+  }
+
+  @action.bound
+  public cleanup() {
+    this.cleanupSubscription?.();
+    cleanupQueryObserver(otherMobxQuery);
   }
 }
