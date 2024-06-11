@@ -18,18 +18,10 @@ import {
 import { indexedDbPersistedOptions } from "./indexedDB";
 
 export const QueryClientSingleton = (function CreateSingleton() {
-  let instance: QueryClient;
-
-  function createInstance() {
-    console.log("creating instance");
-    return new QueryClient();
-  }
+  const instance = new QueryClient();
 
   return {
-    getInstance: function () {
-      if (!instance) {
-        instance = createInstance();
-      }
+    getInstance: () => {
       return instance;
     },
   };
@@ -123,6 +115,9 @@ export class MobxStore {
     MobXQueryObservers.cleanup(mobxTimeQuery);
   }
 }
+
+// this is just a duplicate of the query and store above, but with a different key
+// to test QueryObserver cleanup
 
 export const otherMobxQuery = queryOptions({
   queryKey: ["other-mobx"],
