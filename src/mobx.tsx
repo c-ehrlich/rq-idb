@@ -74,8 +74,8 @@ const QueryObservers = (function () {
     cleanupInstance: (
       qopts: QueryObserverOptions<any, Error, any, any, any>
     ) => {
-      const instance = getQueryObserverInstance(qopts);
-      if (!instance.hasListeners()) {
+      const instance = qoInstances.get(hashKey(qopts.queryKey));
+      if (instance && !instance.hasListeners()) {
         instance.destroy();
         qoInstances.delete(hashKey(qopts.queryKey));
       }
