@@ -5,9 +5,9 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { broadcastQueryClient } from "@tanstack/query-broadcast-client-experimental";
-import { getQueryClient } from "./mobx.tsx";
+import { QueryClientSingleton } from "./mobx.tsx";
 
-const queryClient = getQueryClient();
+const queryClient = QueryClientSingleton.getInstance();
 
 broadcastQueryClient({
   queryClient,

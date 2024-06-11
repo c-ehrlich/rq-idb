@@ -17,7 +17,7 @@ import {
 } from "@tanstack/react-query";
 import { indexedDbPersistedOptions } from "./indexedDB";
 
-function queryClientFactory() {
+export const QueryClientSingleton = (function CreateSingleton() {
   let instance: QueryClient;
 
   function createInstance() {
@@ -33,9 +33,7 @@ function queryClientFactory() {
       return instance;
     },
   };
-}
-
-export const getQueryClient = queryClientFactory().getInstance;
+})();
 
 export const mobxTimeQuery = queryOptions({
   queryKey: ["in-mobx"],
@@ -48,7 +46,7 @@ export const mobxTimeQuery = queryOptions({
   staleTime: 5000,
 });
 
-export const MobXQueryObservers = (function () {
+export const MobXQueryObservers = (function CreateSingleton() {
   const qoInstances = new Map<string, QueryObserver>();
 
   return {
@@ -61,10 +59,12 @@ export const MobXQueryObservers = (function () {
 
       const name = hashKey(qopts.queryKey);
 
+      const queryClient = QueryClientSingleton.getInstance();
+
       if (!qoInstances.has(name)) {
         qoInstances.set(
           name,
-          new QueryObserver<any, any, any, any, any>(getQueryClient(), qopts)
+          new QueryObserver<any, any, any, any, any>(queryClient, qopts)
         );
       }
 
@@ -113,7 +113,8 @@ export class MobxStore {
 
   @action.bound
   public async fetchTime() {
-    await getQueryClient().prefetchQuery(mobxTimeQuery);
+    const queryClient = QueryClientSingleton.getInstance();
+    await queryClient.prefetchQuery(mobxTimeQuery);
   }
 
   @action.bound
@@ -136,9 +137,8 @@ export const otherMobxQuery = queryOptions({
 export class OtherMobxStore {
   @observable
   public timeQuery: MobxQuery<{ time: string }>;
-
   @action.bound
-  private setTime(newTime: MobxQuery<{ time: string }>) {
+  private updateTimeQuery(newTime: MobxQuery<{ time: string }>) {
     this.timeQuery = newTime;
   }
 
@@ -152,7 +152,7 @@ export class OtherMobxStore {
 
     onBecomeObserved(this, "timeQuery", () => {
       this.cleanupSubscription = otherQueryObserver.subscribe((res) => {
-        this.setTime(res);
+        this.updateTimeQuery(res);
         // (any side effects, just like the callback in `operate`)
       });
     });
@@ -163,7 +163,8 @@ export class OtherMobxStore {
 
   @action.bound
   public async fetchTime() {
-    await getQueryClient().prefetchQuery(otherMobxQuery);
+    const queryClient = QueryClientSingleton.getInstance();
+    await queryClient.prefetchQuery(otherMobxQuery);
   }
 
   @action.bound
