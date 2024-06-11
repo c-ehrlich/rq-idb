@@ -81,9 +81,6 @@ export const MobXQueryObservers = (function () {
   };
 })();
 
-export const getQueryObserverInstance = MobXQueryObservers.get;
-export const cleanupQueryObserver = MobXQueryObservers.cleanup;
-
 type MobxQuery<TData, TError = Error> = QueryObserverResult<TData, TError>;
 
 export class MobxStore {
@@ -98,14 +95,13 @@ export class MobxStore {
   private cleanupSubscription?: () => void;
 
   constructor() {
-    this.timeQuery = getQueryObserverInstance(mobxTimeQuery).getCurrentResult();
+    const timeQueryObserver = MobXQueryObservers.get(mobxTimeQuery);
+    this.timeQuery = timeQueryObserver.getCurrentResult();
 
     makeObservable(this);
 
     onBecomeObserved(this, "timeQuery", () => {
-      this.cleanupSubscription = getQueryObserverInstance(
-        mobxTimeQuery
-      ).subscribe((res) => {
+      this.cleanupSubscription = timeQueryObserver.subscribe((res) => {
         this.setTime(res);
         // (any side effects, just like the callback in `operate`)
       });
@@ -123,6 +119,7 @@ export class MobxStore {
   @action.bound
   public cleanup() {
     this.cleanupSubscription?.();
+    MobXQueryObservers.cleanup(mobxTimeQuery);
   }
 }
 
@@ -148,15 +145,13 @@ export class OtherMobxStore {
   private cleanupSubscription?: () => void;
 
   constructor() {
-    this.timeQuery =
-      getQueryObserverInstance(otherMobxQuery).getCurrentResult();
+    const otherQueryObserver = MobXQueryObservers.get(otherMobxQuery);
+    this.timeQuery = otherQueryObserver.getCurrentResult();
 
     makeObservable(this);
 
     onBecomeObserved(this, "timeQuery", () => {
-      this.cleanupSubscription = getQueryObserverInstance(
-        otherMobxQuery
-      ).subscribe((res) => {
+      this.cleanupSubscription = otherQueryObserver.subscribe((res) => {
         this.setTime(res);
         // (any side effects, just like the callback in `operate`)
       });
@@ -174,6 +169,6 @@ export class OtherMobxStore {
   @action.bound
   public cleanup() {
     this.cleanupSubscription?.();
-    cleanupQueryObserver(otherMobxQuery);
+    MobXQueryObservers.cleanup(otherMobxQuery);
   }
 }
