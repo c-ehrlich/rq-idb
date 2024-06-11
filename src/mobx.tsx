@@ -52,7 +52,7 @@ const QueryObservers = (function () {
   const qoInstances = new Map<string, QueryObserver>();
 
   return {
-    getInstance: function <TData>(
+    get: function <TData>(
       qopts: QueryObserverOptions<TData, Error, TData, any, any>
     ): QueryObserver<TData, Error, TData, TData> {
       if (!qopts.queryKey) {
@@ -71,9 +71,7 @@ const QueryObservers = (function () {
       return qoInstances.get(name) as QueryObserver<TData, Error, TData, TData>;
     },
 
-    cleanupInstance: (
-      qopts: QueryObserverOptions<any, Error, any, any, any>
-    ) => {
+    cleanup: (qopts: QueryObserverOptions<any, Error, any, any, any>) => {
       const instance = qoInstances.get(hashKey(qopts.queryKey));
       if (instance && !instance.hasListeners()) {
         instance.destroy();
@@ -83,8 +81,8 @@ const QueryObservers = (function () {
   };
 })();
 
-export const getQueryObserverInstance = QueryObservers.getInstance;
-export const cleanupQueryObserver = QueryObservers.cleanupInstance;
+export const getQueryObserverInstance = QueryObservers.get;
+export const cleanupQueryObserver = QueryObservers.cleanup;
 
 type MobxQuery<TData, TError = Error> = QueryObserverResult<TData, TError>;
 
