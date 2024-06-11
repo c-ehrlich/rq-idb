@@ -54,7 +54,12 @@ const Rq = () => {
 
 const MobX = observer(function MobX() {
   const mobxStore = useLocalObservable(() => new MobxStore());
-  const { timeQuery: mobxTime, fetchTime: mobxFetchTime } = mobxStore;
+  const {
+    timeQuery: mobxTime,
+    fetchTime: mobxFetchTime,
+    someMutation,
+    // mutateAsync, // TODO: test in app
+  } = mobxStore;
 
   return (
     <div>
@@ -63,6 +68,9 @@ const MobX = observer(function MobX() {
         <button onClick={mobxFetchTime}>
           Refetch inside MobX using prefetchQuery()
         </button>
+      </div>
+      <div>
+        <button onClick={someMutation}>Mutate inside MobX</button>
       </div>
     </div>
   );

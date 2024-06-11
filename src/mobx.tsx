@@ -16,6 +16,7 @@ import {
   queryOptions,
 } from "@tanstack/react-query";
 import { indexedDbPersistedOptions } from "./indexedDB";
+import { MobxMutation } from "./mutation";
 
 export const QueryClientSingleton = (function CreateSingleton() {
   const instance = new QueryClient();
@@ -81,6 +82,8 @@ type MobxQuery<TData, TError = Error> = QueryObserverResult<TData, TError>;
 export class MobxStore {
   @observable
   public timeQuery: MobxQuery<{ time: string }>;
+  // 🐉 this value needs to be the same as the variable above it
+  private timeQueryVariableName = "timeQuery";
 
   @action.bound
   private setTime(newTime: MobxQuery<{ time: string }>) {
@@ -95,13 +98,13 @@ export class MobxStore {
 
     makeObservable(this);
 
-    onBecomeObserved(this, "timeQuery", () => {
+    onBecomeObserved(this, this.timeQueryVariableName, () => {
       this.cleanupSubscription = timeQueryObserver.subscribe((res) => {
         this.setTime(res);
         // (any side effects, just like the callback in `operate`)
       });
     });
-    onBecomeUnobserved(this, "timeQuery", () => {
+    onBecomeUnobserved(this, this.timeQueryVariableName, () => {
       this.cleanup();
     });
   }
@@ -110,6 +113,48 @@ export class MobxStore {
   public async fetchTime() {
     const queryClient = QueryClientSingleton.getInstance();
     await queryClient.prefetchQuery(mobxTimeQuery);
+  }
+
+  @action.bound
+  public someMutation() {
+    const mutation = new MobxMutation({
+      mutationKey: ["fooo"],
+      mutationFn: async (args: { foo: string }) => {
+        // do mutation stuff
+        console.log("mutationFn", args);
+        return "foo"; // type of `data` in `onSettled`
+      },
+      onSettled: async (data, error, args) => {
+        console.log("onSettled", data, error, args);
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        await QueryClientSingleton.getInstance().invalidateQueries(
+          mobxTimeQuery
+        );
+      },
+    });
+
+    mutation.mutate({ foo: "bar" });
+  }
+
+  public async someMutationAsync(args: { foo: string }) {
+    const mutation = new MobxMutation({
+      mutationKey: ["fooo"],
+      mutationFn: async (args: { foo: string }) => {
+        // do mutation stuff
+        console.log("async mutationFn", args);
+        return "foo"; // type of `data` in `onSettled`
+      },
+      onSettled: async (data, error, args) => {
+        console.log("onSettled", data, error, args);
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        await QueryClientSingleton.getInstance().invalidateQueries(
+          mobxTimeQuery
+        );
+      },
+    });
+
+    const res = await mutation.mutateAsync(args);
+    console.log("res", res);
   }
 
   @action.bound
