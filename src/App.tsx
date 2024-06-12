@@ -58,7 +58,6 @@ const MobX = observer(function MobX() {
     timeQuery: mobxTime,
     fetchTime: mobxFetchTime,
     someMutation,
-    // mutateAsync, // TODO: test in app
   } = mobxStore;
 
   return (
@@ -70,7 +69,9 @@ const MobX = observer(function MobX() {
         </button>
       </div>
       <div>
-        <button onClick={someMutation}>Mutate inside MobX</button>
+        <button onClick={() => someMutation({ foo: "bar" })}>
+          Mutate inside MobX
+        </button>
       </div>
     </div>
   );
